@@ -23,6 +23,7 @@ public class PlayerInput : MonoBehaviour
 		Vector2 movementInput = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
 		m_playerController.SetMovementInput(movementInput);
 
+		/*
 		if (Input.GetKeyDown(KeyCode.Space))
 		{
 			m_playerController.OnJumpInputDown();
@@ -32,5 +33,6 @@ public class PlayerInput : MonoBehaviour
 		{
 			m_playerController.OnJumpInputUp();
 		}
+		*/
 	}
 }

@@ -1,41 +1,76 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
+
+[System.Serializable]
+public class ControllerObjectEvent : UnityEvent { }
 
 public class ControllerObject : MonoBehaviour
 {
-	public float m_maxDownardSlopeAngle;
+	#region Events
+	[Header("Base Controller Events")]
 
-	public bool m_onMaxDownardSlope;
+	public ControllerObjectEvents m_controllerObjectEvents;
+	[System.Serializable]
+	public struct ControllerObjectEvents
+	{
+		[Header("Basic Events")]
+		public ControllerObjectEvent m_onLandedEvent;
+	}
+	#endregion
 
-	public float m_slopeFriction;
+	#region Base Controller Properties
+	[Header("Base Controller Properties")]
 
-	private CharacterController m_characterController;
-	private Vector3 m_velocity;
+	public ControllerProperties m_controllerProperties;
+	[System.Serializable]
+	public struct ControllerProperties
+	{
+		public float m_maxDownardSlopeAngle;
+		public float m_slopeFriction;
+		public float m_slopeForce;
+		public float m_slopeRayLengthGround;
+		public float m_slopeRayLengthAir;
+	}
+
+	[HideInInspector]
+	public Vector3 m_velocity;
 
 	private Vector3 m_slopeNormal;
+	private bool m_isLanded;
+	private bool m_offLedge;
 
+	private bool m_onMaxDownardSlope;
 	private bool m_onSlope;
+	#endregion
+
+	[HideInInspector]
+	public CharacterController m_characterController;
+
+	[HideInInspector]
+	public bool m_hasJumped;
 
 	public virtual void Start()
 	{
 		m_characterController = GetComponent<CharacterController>();
 	}
 
-	/*
 	private void Update()
 	{
 		PerformController();
 	}
-	*/
 
 	public virtual void PerformController()
 	{
-		SlopePhysics();
-
 		m_characterController.Move(m_velocity * Time.deltaTime);
 
-		CalculateGroundPhysics();
+		ZeroVelocityOnGround();
+
+		CalculateLanded();
+		CalculateLedge();
+
+		SlopePhysics();
 	}
 
 	public bool IsGrounded()
@@ -48,36 +83,110 @@ public class ControllerObject : MonoBehaviour
 		return false;
 	}
 
-	public void SlopePhysics()
+	public bool IsTouchingCeiling()
 	{
-		RaycastHit hit;
+		if (m_characterController.collisionFlags == CollisionFlags.Above)
+		{
+			return true;
+		}
+
+		return false;
+	}
+	
+	public bool OnSlope()
+	{
+		if (m_velocity.y > 0)
+		{
+			return false;
+		}
+
+		if (m_hasJumped)
+		{
+			return false;
+		}
+
+		float currentRayLength = 0;
+
+		if (m_isLanded)
+		{
+			currentRayLength = m_controllerProperties.m_slopeRayLengthGround;
+		}
+		else
+		{
+			currentRayLength = m_controllerProperties.m_slopeRayLengthAir;
+		}
+
+		RaycastHit firstHit;
 		Vector3 bottom = m_characterController.transform.position - new Vector3(0, m_characterController.height / 2, 0);
 
-		if (Physics.Raycast(bottom, Vector3.down, out hit, 0.5f))
+		if (Physics.Raycast(bottom, Vector3.down, out firstHit, currentRayLength))
 		{
-			if (hit.normal != Vector3.up)
+			if (firstHit.normal != Vector3.up)
 			{
-				if (Vector3.Angle(Vector3.up, hit.normal) > m_maxDownardSlopeAngle)
+				if (Vector3.Angle(Vector3.up, firstHit.normal) > m_controllerProperties.m_maxDownardSlopeAngle)
 				{
 					m_onMaxDownardSlope = true;
-
-					m_velocity.x += (1f - hit.normal.y) * hit.normal.x * (m_slopeFriction);
-					m_velocity.z += (1f - hit.normal.y) * hit.normal.z * (m_slopeFriction);
+					m_velocity.x += (1f - firstHit.normal.y) * firstHit.normal.x * (m_controllerProperties.m_slopeFriction);
+					m_velocity.z += (1f - firstHit.normal.y) * firstHit.normal.z * (m_controllerProperties.m_slopeFriction);
 				}
-
-				m_characterController.Move(new Vector3(0, -(hit.distance), 0));
-
-				m_onSlope = true;
+				return true;
 			}
+		}
+		return false;
+	}
+	
+	public void SlopePhysics()
+	{
+		if (OnSlope())
+		{
+			m_characterController.Move(Vector3.down * (m_characterController.height / 2) * m_controllerProperties.m_slopeForce * Time.deltaTime);
+
+
 		}
 	}
 
-	private void CalculateGroundPhysics()
+	public void ZeroVelocityOnGround()
 	{
 		if (IsGrounded())
 		{
 			m_velocity.y = 0;
 		}
+	}
+
+	public void CalculateLanded()
+	{
+		if (IsGrounded() && !m_isLanded)
+		{
+			OnLanded();
+		}
+		if (!IsGrounded())
+		{
+			m_isLanded = false;
+		}
+	}
+
+	public virtual void OnLanded()
+	{
+		m_hasJumped = false;
+		m_isLanded = true;
+		m_controllerObjectEvents.m_onLandedEvent.Invoke();
+	}
+
+	public void CalculateLedge()
+	{
+		if (!IsGrounded() && !m_offLedge && m_velocity.y < 0)
+		{
+			OnOffLedge();
+		}
+		if (IsGrounded())
+		{
+			m_offLedge = false;
+		}
+	}
+
+	public virtual void OnOffLedge()
+	{
+		m_offLedge = true;
 	}
 
 	public bool CheckCollisionLayer(LayerMask p_layerMask, GameObject p_object)

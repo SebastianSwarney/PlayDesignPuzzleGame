@@ -9,25 +9,36 @@ public class PlayerControllerEvent : UnityEvent { }
 
 public class PlayerController : ControllerObject
 {
+	#region Player Controller States
 	public enum MovementControllState { MovementEnabled, MovementDisabled }
 	public enum GravityState { GravityEnabled, GravityDisabled }
-	public enum DamageState { Vulnerable, Invulnerable }
-	public enum InputState { InputEnabled, InputDisabled }
-	public enum AliveState { IsAlive, IsDead }
-	public PlayerState m_states;
 
-	#region Movement Events
-	public PlayerMovementEvents m_movementEvents;
+	[Header("Player Controller States")]
+
+	public PlayerState m_states;
 	[System.Serializable]
-	public struct PlayerMovementEvents
+	public struct PlayerState
+	{
+		public MovementControllState m_movementControllState;
+		public GravityState m_gravityControllState;
+	}
+	#endregion
+
+	#region Player Controller Events
+	public PlayerControllerEvents m_playerControllerEvents;
+	[System.Serializable]
+	public struct PlayerControllerEvents
 	{
 		[Header("Basic Events")]
-		public PlayerControllerEvent m_onLandedEvent;
 		public PlayerControllerEvent m_onJumpEvent;
 	}
 	#endregion
 
 	#region Base Movement Properties
+
+	[Header("Base Controller Properties")]
+	public BaseMovementProperties m_baseMovementProperties;
+
 	[System.Serializable]
 	public struct BaseMovementProperties
 	{
@@ -35,19 +46,17 @@ public class PlayerController : ControllerObject
 		public float m_accelerationTime;
 	}
 
-	[Header("Base Movement Properties")]
-	public BaseMovementProperties m_baseMovementProperties;
-
-	private float m_currentMovementSpeed;
-	[HideInInspector]
-	public Vector3 m_velocity;
 	private Vector3 m_velocitySmoothing;
-	private CharacterController m_characterController;
+
 	private Coroutine m_jumpBufferCoroutine;
 	private Coroutine m_graceBufferCoroutine;
 	#endregion
 
 	#region Jumping Properties
+
+	[Header("Jumping Properties")]
+	public JumpingProperties m_jumpingProperties;
+
 	[System.Serializable]
 	public struct JumpingProperties
 	{
@@ -61,58 +70,48 @@ public class PlayerController : ControllerObject
 		public float m_jumpBufferTime;
 	}
 
-	[Header("Jumping Properties")]
-	public JumpingProperties m_jumpingProperties;
-
 	private float m_graceTimer;
 	private float m_jumpBufferTimer;
 
 	private float m_gravity;
 	private float m_maxJumpVelocity;
 	private float m_minJumpVelocity;
-	private bool m_isLanded;
-	private bool m_offLedge;
 	#endregion
 
 	[HideInInspector]
 	public Vector2 m_movementInput;
 
-	private PlayerInput m_input;
-
-	private Animator m_animator;
-
 	public override void Start()
 	{
 		base.Start();
 
-		m_characterController = GetComponent<CharacterController>();
-
-		m_animator = GetComponentInChildren<Animator>();
-
 		CalculateJump();
 
-		m_currentMovementSpeed = m_baseMovementProperties.m_baseMovementSpeed;
 		m_jumpBufferTimer = m_jumpingProperties.m_jumpBufferTime;
 	}
+
 	private void OnValidate()
 	{
 		CalculateJump();
 	}
 
-	private void Update()
-	{
-		PerformController();
-	}
-
+	
 	public override void PerformController()
 	{
+
+		if (Input.GetKeyDown(KeyCode.Space))
+		{
+			OnJumpInputDown();
+		}
+
+		if (Input.GetKeyUp(KeyCode.Space))
+		{
+			OnJumpInputUp();
+		}
+
 		CalculateVelocity();
 
-		SlopePhysics();
-
-		m_characterController.Move(m_velocity * Time.deltaTime);
-
-		//CalculateGroundPhysics();
+		base.PerformController();
 	}
 
 	#region Input Code
@@ -173,112 +172,23 @@ public class PlayerController : ControllerObject
 	}
 	#endregion
 
-	#region Player State Code
-	[System.Serializable]
-	public struct PlayerState
+	public override void OnLanded()
 	{
-		public MovementControllState m_movementControllState;
-		public GravityState m_gravityControllState;
-		public DamageState m_damageState;
-		public InputState m_inputState;
-		public AliveState m_aliveState;
-	}
-
-	/*
-	public bool IsGrounded()
-	{
-		if (m_characterController.collisionFlags == CollisionFlags.Below)
-		{
-			return true;
-		}
-
-		return false;
-	}
-
-	private void SlopePhysics()
-	{
-		RaycastHit hit;
-		Vector3 bottom = m_characterController.transform.position - new Vector3(0, m_characterController.height / 2, 0);
-
-		if (Physics.Raycast(bottom, Vector3.down, out hit, 0.5f))
-		{
-			if (hit.normal != Vector3.up)
-			{
-				if (Vector3.Angle(Vector3.up, hit.normal) > m_maxSlopeAngle)
-				{
-					//m_onMaxDownardSlope = true;
-
-					m_velocity.x += (1f - hit.normal.y) * hit.normal.x * (m_slopeFriction);
-					m_velocity.z += (1f - hit.normal.y) * hit.normal.z * (m_slopeFriction);
-				}
-
-				m_characterController.Move(new Vector3(0, -(hit.distance), 0));
-			}
-		}
-	}
-	*/
-
-	private void OnLanded()
-	{
-		m_isLanded = true;
+		base.OnLanded();
 
 		if (CheckBuffer(ref m_jumpBufferTimer, ref m_jumpingProperties.m_jumpBufferTime, m_jumpBufferCoroutine))
 		{
 			JumpMaxVelocity();
 		}
-
-		m_movementEvents.m_onLandedEvent.Invoke();
 	}
 
-	private void OnOffLedge()
+	public override void OnOffLedge()
 	{
-		m_offLedge = true;
+		base.OnOffLedge();
 
 		m_graceBufferCoroutine = StartCoroutine(RunBufferTimer((x) => m_graceTimer = (x), m_jumpingProperties.m_graceTime));
 
 	}
-	#endregion
-
-	#region Physics Calculation Code
-	/*
-	private void CalculateGroundPhysics()
-	{
-		if (IsGrounded() && !OnSlope())
-		{
-			m_velocity.y = 0;
-		}
-
-		if (OnSlope())
-		{
-			RaycastHit hit;
-
-			Vector3 bottom = m_characterController.transform.position - new Vector3(0, m_characterController.height / 2, 0);
-
-			if (Physics.Raycast(bottom, Vector3.down, out hit))
-			{
-				m_characterController.Move(new Vector3(0, -(hit.distance), 0));
-			}
-		}
-
-		if (!IsGrounded() && !m_offLedge)
-		{
-			OnOffLedge();
-		}
-		if (IsGrounded())
-		{
-			m_offLedge = false;
-		}
-
-		if (IsGrounded() && !m_isLanded)
-		{
-			OnLanded();
-		}
-		if (!IsGrounded())
-		{
-			m_isLanded = false;
-		}
-	}
-	*/
 
 	private void CalculateVelocity()
 	{
@@ -290,9 +200,9 @@ public class PlayerController : ControllerObject
 		if (m_states.m_movementControllState == MovementControllState.MovementEnabled)
 		{
 			Vector3 forwardMovement = transform.right * 0;
-			Vector3 rightMovement = transform.forward * m_movementInput.x;
+			Vector3 rightMovement = transform.right * m_movementInput.x;
 
-			Vector3 targetHorizontalMovement = Vector3.ClampMagnitude(forwardMovement + rightMovement, 1.0f) * m_currentMovementSpeed;
+			Vector3 targetHorizontalMovement = Vector3.ClampMagnitude(forwardMovement + rightMovement, 1.0f) * m_baseMovementProperties.m_baseMovementSpeed;
 			Vector3 horizontalMovement = Vector3.SmoothDamp(m_velocity, targetHorizontalMovement, ref m_velocitySmoothing, m_baseMovementProperties.m_accelerationTime);
 
 			m_velocity = new Vector3(horizontalMovement.x, m_velocity.y, horizontalMovement.z);
@@ -302,7 +212,7 @@ public class PlayerController : ControllerObject
 			Vector3 forwardMovement = transform.right;
 			Vector3 rightMovement = transform.forward;
 
-			Vector3 targetHorizontalMovement = Vector3.ClampMagnitude(forwardMovement + rightMovement, 1.0f) * m_currentMovementSpeed;
+			Vector3 targetHorizontalMovement = Vector3.ClampMagnitude(forwardMovement + rightMovement, 1.0f) * m_baseMovementProperties.m_baseMovementSpeed;
 			Vector3 horizontalMovement = Vector3.SmoothDamp(m_velocity, targetHorizontalMovement, ref m_velocitySmoothing, m_baseMovementProperties.m_accelerationTime);
 
 			m_velocity = new Vector3(horizontalMovement.x, m_velocity.y, horizontalMovement.z);
@@ -315,7 +225,6 @@ public class PlayerController : ControllerObject
 		Vector3 deltaPosition = p_targetPosition - transform.position;
 		m_velocity = deltaPosition / Time.deltaTime;
 	}
-	#endregion
 
 	#region Jump Code
 	public void OnJumpInputDown()
@@ -353,12 +262,14 @@ public class PlayerController : ControllerObject
 
 	private void GroundJump()
 	{
-		m_movementEvents.m_onJumpEvent.Invoke();
+		m_playerControllerEvents.m_onJumpEvent.Invoke();
 		JumpMaxVelocity();
 	}
 
 	private void JumpMaxVelocity()
 	{
+		m_hasJumped = true;
+
 		m_velocity.y = m_maxJumpVelocity;
 	}
 

@@ -6,8 +6,9 @@ public class CameraController : MonoBehaviour
 {
 	public CharacterController target;
 	private PlayerController m_player;
-	//public PlayerController shit;
-	public float m_xOffset;
+
+	public float m_zOffset;
+
 	public float verticalOffset;
 	public float lookAheadDstX;
 	public float lookSmoothTimeX;
@@ -26,22 +27,21 @@ public class CameraController : MonoBehaviour
 
 	void Start()
 	{
-		focusArea = new FocusArea(target.bounds, focusAreaSize);
-
 		m_player = target.GetComponent<PlayerController>();
+
+		focusArea = new FocusArea(target.bounds, focusAreaSize);
 	}
 
 	void LateUpdate()
 	{
 		focusArea.Update(target.bounds);
 
-		Vector3 focusPosition = focusArea.centre + Vector3.up * verticalOffset;
+		Vector2 focusPosition = focusArea.centre + Vector2.up * verticalOffset;
 
-		if (focusArea.velocity.z != 0)
+		if (focusArea.velocity.x != 0)
 		{
-			lookAheadDirX = Mathf.Sign(focusArea.velocity.z);
-
-			if (Mathf.Sign(m_player.m_movementInput.x) == Mathf.Sign(focusArea.velocity.z) && m_player.m_movementInput.x != 0)
+			lookAheadDirX = Mathf.Sign(focusArea.velocity.x);
+			if (Mathf.Sign(m_player.m_movementInput.x) == Mathf.Sign(focusArea.velocity.x) && m_player.m_movementInput.x != 0)
 			{
 				lookAheadStopped = false;
 				targetLookAheadX = lookAheadDirX * lookAheadDstX;
@@ -56,25 +56,24 @@ public class CameraController : MonoBehaviour
 			}
 		}
 
+
 		currentLookAheadX = Mathf.SmoothDamp(currentLookAheadX, targetLookAheadX, ref smoothLookVelocityX, lookSmoothTimeX);
+
 		focusPosition.y = Mathf.SmoothDamp(transform.position.y, focusPosition.y, ref smoothVelocityY, verticalSmoothTime);
-
-		focusPosition += Vector3.forward * currentLookAheadX;
-
-		transform.position = focusPosition + Vector3.right * m_xOffset;
+		focusPosition += Vector2.right * currentLookAheadX;
+		transform.position = (Vector3)focusPosition + Vector3.forward * -m_zOffset;
 	}
 
 	void OnDrawGizmos()
 	{
 		Gizmos.color = new Color(1, 0, 0, .5f);
-		Gizmos.DrawCube(focusArea.centre, new Vector3(0, focusAreaSize.y, focusAreaSize.x));
+		Gizmos.DrawCube(focusArea.centre, focusAreaSize);
 	}
 
-	[System.Serializable]
 	struct FocusArea
 	{
-		public Vector3 centre;
-		public Vector3 velocity;
+		public Vector2 centre;
+		public Vector2 velocity;
 		float left, right;
 		float top, bottom;
 
@@ -86,23 +85,20 @@ public class CameraController : MonoBehaviour
 			bottom = targetBounds.min.y;
 			top = targetBounds.min.y + size.y;
 
-			velocity = Vector3.zero;
-
-			Vector2 flatPoint = new Vector2((left + right) / 2, (top + bottom) / 2);
-			centre = new Vector3(0, flatPoint.y, flatPoint.x);
+			velocity = Vector2.zero;
+			centre = new Vector2((left + right) / 2, (top + bottom) / 2);
 		}
 
 		public void Update(Bounds targetBounds)
 		{
 			float shiftX = 0;
-
-			if (targetBounds.min.z < left)
+			if (targetBounds.min.x < left)
 			{
-				shiftX = targetBounds.min.z - left;
+				shiftX = targetBounds.min.x - left;
 			}
-			else if (targetBounds.max.z > right)
+			else if (targetBounds.max.x > right)
 			{
-				shiftX = targetBounds.max.z - right;
+				shiftX = targetBounds.max.x - right;
 			}
 			left += shiftX;
 			right += shiftX;
@@ -118,12 +114,8 @@ public class CameraController : MonoBehaviour
 			}
 			top += shiftY;
 			bottom += shiftY;
-
-			Vector2 flatCentre = new Vector2((left + right) / 2, (top + bottom) / 2);
-			centre = new Vector3(0, flatCentre.y, flatCentre.x);
-
-			Vector2 flatVelocity = new Vector2(shiftX, shiftY);
-			velocity = new Vector3(0, flatVelocity.y, flatVelocity.x);
+			centre = new Vector2((left + right) / 2, (top + bottom) / 2);
+			velocity = new Vector2(shiftX, shiftY);
 		}
 	}
 }
