@@ -2,33 +2,32 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PushableObject : MonoBehaviour
+public class PushableObject : ControllerObject
 {
-	public float gravity = 12;
-	CharacterController controller;
-	Vector3 velocity;
+	public float m_gravity;
 
-	void Start()
+	public float m_groundDeccelerationTime;
+
+	private Vector3 m_velocitySmoothing;
+
+	public override void PerformController()
 	{
-		controller = GetComponent<CharacterController>();
+		CalculateVelocity();
+
+		base.PerformController();
 	}
 
-	void Update()
+	private void CalculateVelocity()
 	{
-		Push(Vector3.forward * 10 * Time.deltaTime);
+		m_velocity.y -= m_gravity * Time.deltaTime;
 
-		velocity += Vector3.down * gravity * Time.deltaTime;
-		controller.Move(velocity * Time.deltaTime);
-		if (controller.collisionFlags == CollisionFlags.Below)
-		{
-			velocity = Vector3.zero;
-		}
+		Vector3 horizontalMovement = Vector3.SmoothDamp(m_velocity, Vector3.zero, ref m_velocitySmoothing, m_groundDeccelerationTime);
 
+		m_velocity = new Vector3(horizontalMovement.x, m_velocity.y, horizontalMovement.z);
 	}
 
-
-	public void Push(Vector3 amount)
+	public void PushObject(Vector3 p_amount)
 	{
-		controller.Move(amount);
+		m_velocity = p_amount;
 	}
 }

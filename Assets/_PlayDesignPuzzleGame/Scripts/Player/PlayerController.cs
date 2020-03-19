@@ -81,6 +81,8 @@ public class PlayerController : ControllerObject
 	[HideInInspector]
 	public Vector2 m_movementInput;
 
+	public LayerMask m_pushableObjectMask;
+
 	public override void Start()
 	{
 		base.Start();
@@ -98,17 +100,6 @@ public class PlayerController : ControllerObject
 	
 	public override void PerformController()
 	{
-
-		if (Input.GetKeyDown(KeyCode.Space))
-		{
-			OnJumpInputDown();
-		}
-
-		if (Input.GetKeyUp(KeyCode.Space))
-		{
-			OnJumpInputUp();
-		}
-
 		CalculateVelocity();
 
 		base.PerformController();
@@ -172,6 +163,7 @@ public class PlayerController : ControllerObject
 	}
 	#endregion
 
+	#region Physics Code
 	public override void OnLanded()
 	{
 		base.OnLanded();
@@ -225,6 +217,7 @@ public class PlayerController : ControllerObject
 		Vector3 deltaPosition = p_targetPosition - transform.position;
 		m_velocity = deltaPosition / Time.deltaTime;
 	}
+	#endregion
 
 	#region Jump Code
 	public void OnJumpInputDown()
@@ -284,4 +277,20 @@ public class PlayerController : ControllerObject
 	}
 
 	#endregion
+
+	private void OnControllerColliderHit(ControllerColliderHit hit)
+	{
+		if (CheckCollisionLayer(m_pushableObjectMask, hit.gameObject))
+		{
+			PushableObject pushable = hit.gameObject.GetComponent<PushableObject>();
+
+			if (IsGrounded())
+			{
+				if (Physics.Raycast(transform.position, transform.right * Mathf.Sign(m_velocity.x), Mathf.Infinity, m_pushableObjectMask))
+				{
+					pushable.PushObject(m_velocity);
+				}
+			}
+		}
+	}
 }
