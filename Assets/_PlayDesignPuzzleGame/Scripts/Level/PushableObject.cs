@@ -10,6 +10,9 @@ public class PushableObject : ControllerObject
 
 	private Vector3 m_velocitySmoothing;
 
+	[HideInInspector]
+	public bool m_isOnBridge;
+
 	public override void PerformController()
 	{
 		CalculateVelocity();
@@ -28,6 +31,10 @@ public class PushableObject : ControllerObject
 
 	public void PushObject(Vector3 p_amount)
 	{
-		m_velocity = p_amount;
+		//m_velocity = p_amount;
+
+		m_velocity.x = p_amount.x;
+
+		m_isOnBridge = false;
 	}
 }

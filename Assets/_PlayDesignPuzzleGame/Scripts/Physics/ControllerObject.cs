@@ -140,8 +140,6 @@ public class ControllerObject : MonoBehaviour
 		if (OnSlope())
 		{
 			m_characterController.Move(Vector3.down * (m_characterController.height / 2) * m_controllerProperties.m_slopeForce * Time.deltaTime);
-
-
 		}
 	}
 
@@ -187,6 +185,12 @@ public class ControllerObject : MonoBehaviour
 	public virtual void OnOffLedge()
 	{
 		m_offLedge = true;
+	}
+
+	public void PhysicsSeekTo(Vector3 p_targetPosition)
+	{
+		Vector3 deltaPosition = p_targetPosition - transform.position;
+		m_velocity = deltaPosition / Time.deltaTime;
 	}
 
 	public bool CheckCollisionLayer(LayerMask p_layerMask, GameObject p_object)

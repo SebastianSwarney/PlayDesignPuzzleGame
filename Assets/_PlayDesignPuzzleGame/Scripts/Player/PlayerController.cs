@@ -83,6 +83,14 @@ public class PlayerController : ControllerObject
 
 	public LayerMask m_pushableObjectMask;
 
+	public LayerMask m_bridgeMask;
+
+	private bool m_isCarryingObject;
+
+	private Bridge m_carriedBridge;
+
+	public LayerMask m_groundMask;
+
 	public override void Start()
 	{
 		base.Start();
@@ -100,10 +108,64 @@ public class PlayerController : ControllerObject
 	
 	public override void PerformController()
 	{
+		if (Input.GetKeyDown(KeyCode.F))
+		{
+			OnPickupInputDown();
+		}
+
 		CalculateVelocity();
 
 		base.PerformController();
 	}
+
+	public void OnPickupInputDown()
+	{
+		if (!m_isCarryingObject)
+		{
+			PickupObject();
+		}
+		else
+		{
+			PutDownObject();
+		}
+	}
+
+	public void PickupObject()
+	{
+		Collider[] colliders = Physics.OverlapSphere(transform.position, 3f, m_bridgeMask);
+
+		if (colliders.Length > 0)
+		{
+			Bridge bridgeToPickup = colliders[0].GetComponent<Bridge>();
+
+			if (!bridgeToPickup.m_isBeingCarried && !bridgeToPickup.m_isMovingObject)
+			{
+				bridgeToPickup.transform.position = transform.position + (Vector3.up * ((transform.localScale.y / 2) + (bridgeToPickup.transform.localScale.y / 2) + 0.5f));
+				bridgeToPickup.transform.parent = transform;
+
+				m_carriedBridge = bridgeToPickup;
+
+				m_isCarryingObject = true;
+			}
+
+		}
+
+	}
+
+	public void PutDownObject()
+	{
+		m_carriedBridge.transform.parent = null;
+
+		RaycastHit hit;
+
+		if (Physics.Raycast(transform.position, Vector3.down, out hit, Mathf.Infinity, m_groundMask))
+		{
+			m_carriedBridge.transform.position = hit.point + (Vector3.up * (m_carriedBridge.transform.localScale.y / 2));
+		}
+
+		m_isCarryingObject = false;
+	}
+
 
 	#region Input Code
 	public void SetMovementInput(Vector2 p_input)
@@ -199,23 +261,6 @@ public class PlayerController : ControllerObject
 
 			m_velocity = new Vector3(horizontalMovement.x, m_velocity.y, horizontalMovement.z);
 		}
-		else
-		{
-			Vector3 forwardMovement = transform.right;
-			Vector3 rightMovement = transform.forward;
-
-			Vector3 targetHorizontalMovement = Vector3.ClampMagnitude(forwardMovement + rightMovement, 1.0f) * m_baseMovementProperties.m_baseMovementSpeed;
-			Vector3 horizontalMovement = Vector3.SmoothDamp(m_velocity, targetHorizontalMovement, ref m_velocitySmoothing, m_baseMovementProperties.m_accelerationTime);
-
-			m_velocity = new Vector3(horizontalMovement.x, m_velocity.y, horizontalMovement.z);
-		}
-
-	}
-
-	public void PhysicsSeekTo(Vector3 p_targetPosition)
-	{
-		Vector3 deltaPosition = p_targetPosition - transform.position;
-		m_velocity = deltaPosition / Time.deltaTime;
 	}
 	#endregion
 
@@ -284,11 +329,13 @@ public class PlayerController : ControllerObject
 		{
 			PushableObject pushable = hit.gameObject.GetComponent<PushableObject>();
 
+			pushable.PushObject(m_velocity);
+
 			if (IsGrounded())
 			{
 				if (Physics.Raycast(transform.position, transform.right * Mathf.Sign(m_velocity.x), Mathf.Infinity, m_pushableObjectMask))
 				{
-					pushable.PushObject(m_velocity);
+					
 				}
 			}
 		}
