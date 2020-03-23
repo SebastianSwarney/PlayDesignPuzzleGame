@@ -16,13 +16,13 @@ public class PushGun : PushableObject
 
 		if (Input.GetKeyDown(KeyCode.F))
 		{
-			PushObjects();
+			//PushObjects();
 		}
 
 		m_visual.transform.rotation = Quaternion.AngleAxis(m_faceDir == -1 ? 0 : 180, Vector3.up);
 	}
 
-	private void PushObjects()
+	public void PushObjects()
 	{
 		Collider[] colliders = Physics.OverlapSphere(transform.position, m_pushRadius, m_pushObjectMask);
 

@@ -73,19 +73,12 @@ public class ControllerObject : MonoBehaviour
 			m_faceDir = (int)Mathf.Sign(m_velocity.x);
 		}
 
-		/*
-		if (m_velocity.x != 0)
-		{
-			m_faceDir = (int)Mathf.Sign(m_velocity.x);
-		}
-		*/
-
 		ZeroVelocityOnGround();
 
 		CalculateLanded();
 		CalculateLedge();
 
-		SlopePhysics();
+		//SlopePhysics();
 	}
 
 	public bool IsGrounded()

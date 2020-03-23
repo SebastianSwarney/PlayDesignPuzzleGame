@@ -91,6 +91,12 @@ public class PlayerController : ControllerObject
 
 	public LayerMask m_groundMask;
 
+	public LayerMask m_pushGunMask;
+
+	public LayerMask m_ladderMask;
+
+	private bool m_onLadder;
+
 	public override void Start()
 	{
 		base.Start();
@@ -113,9 +119,85 @@ public class PlayerController : ControllerObject
 			OnPickupInputDown();
 		}
 
-		CalculateVelocity();
+		if (Input.GetKeyDown(KeyCode.G))
+		{
+			OnUseInputDown();
+		}
 
 		base.PerformController();
+
+		if (Input.GetKeyDown(KeyCode.E))
+		{
+			OnLadderInputDown();
+		}
+
+		if (m_onLadder)
+		{
+			OnLadder();
+		}
+		else
+		{
+			CalculateVelocity();
+		}
+	}
+
+	private void OnLadderInputDown()
+	{
+		if (!m_onLadder)
+		{
+			RaycastHit hit;
+
+			if (Physics.SphereCast(transform.position, 1f, -Vector3.forward, out hit, Mathf.Infinity, m_ladderMask))
+			{
+				m_velocity = Vector3.zero;
+
+				transform.position = transform.position + (Vector3.forward * (hit.transform.position.z - 1f));
+
+				m_onLadder = true;
+			}
+		}
+		else
+		{
+			m_onLadder = false;
+
+			transform.position = new Vector3(transform.position.x, transform.position.y, 0);
+		}
+	}
+
+	private void OnLadder()
+	{
+		Vector3 verticalMovement = transform.up * m_movementInput.y;
+
+		Vector3 targetVerticalMovement = verticalMovement * m_baseMovementProperties.m_baseMovementSpeed;
+		Vector3 movement = Vector3.SmoothDamp(m_velocity, targetVerticalMovement, ref m_velocitySmoothing, m_baseMovementProperties.m_accelerationTime);
+
+		m_velocity = new Vector3(m_velocity.x, movement.y, m_velocity.z);
+
+		if (m_onLadder)
+		{
+			RaycastHit hit;
+
+			if (Physics.SphereCast(transform.position, 1f, Vector3.forward, out hit, Mathf.Infinity, m_ladderMask))
+			{
+
+			}
+			else
+			{
+				m_onLadder = false;
+
+				transform.position = new Vector3(transform.position.x, transform.position.y, 0);
+			}
+		}
+	}
+
+	public void OnUseInputDown()
+	{
+		Collider[] colliders = Physics.OverlapSphere(transform.position, 3f, m_pushGunMask);
+
+		if (colliders.Length > 0)
+		{
+			colliders[0].gameObject.GetComponent<PushGun>().PushObjects();
+		}
 	}
 
 	public void OnPickupInputDown()

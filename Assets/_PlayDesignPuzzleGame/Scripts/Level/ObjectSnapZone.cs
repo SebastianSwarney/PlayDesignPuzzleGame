@@ -13,6 +13,7 @@ public class ObjectSnapZone : MonoBehaviour
 	public float m_snapTime;
 
 	public ObjectSnapZoneEvent m_onSnapCompleteEvent;
+	public ObjectSnapZoneEvent m_onObjectLeaveEvent;
 
 	private bool m_hasObject;
 
@@ -69,6 +70,8 @@ public class ObjectSnapZone : MonoBehaviour
 		if (other.gameObject == m_targetObject.gameObject)
 		{
 			m_hasObject = false;
+
+			m_onObjectLeaveEvent.Invoke();
 		}
 	}
 }
