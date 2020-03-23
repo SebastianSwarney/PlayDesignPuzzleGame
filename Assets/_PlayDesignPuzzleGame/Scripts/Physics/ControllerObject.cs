@@ -51,6 +51,9 @@ public class ControllerObject : MonoBehaviour
 	[HideInInspector]
 	public bool m_hasJumped;
 
+	[HideInInspector]
+	public int m_faceDir = -1;
+
 	public virtual void Start()
 	{
 		m_characterController = GetComponent<CharacterController>();
@@ -64,6 +67,18 @@ public class ControllerObject : MonoBehaviour
 	public virtual void PerformController()
 	{
 		m_characterController.Move(m_velocity * Time.deltaTime);
+
+		if ((int)Mathf.Sign(m_velocity.x) != m_faceDir)
+		{
+			m_faceDir = (int)Mathf.Sign(m_velocity.x);
+		}
+
+		/*
+		if (m_velocity.x != 0)
+		{
+			m_faceDir = (int)Mathf.Sign(m_velocity.x);
+		}
+		*/
 
 		ZeroVelocityOnGround();
 

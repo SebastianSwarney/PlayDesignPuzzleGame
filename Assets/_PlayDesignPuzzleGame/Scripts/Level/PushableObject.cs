@@ -8,7 +8,8 @@ public class PushableObject : ControllerObject
 
 	public float m_groundDeccelerationTime;
 
-	private Vector3 m_velocitySmoothing;
+	[HideInInspector]
+	public Vector3 m_velocitySmoothing;
 
 	[HideInInspector]
 	public bool m_isOnBridge;
