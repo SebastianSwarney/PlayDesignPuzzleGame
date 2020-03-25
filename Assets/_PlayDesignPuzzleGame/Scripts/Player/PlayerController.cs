@@ -9,6 +9,8 @@ public class PlayerControllerEvent : UnityEvent { }
 
 public class PlayerController : ControllerObject
 {
+	public static PlayerController instance;
+
 	#region Player Controller States
 	public enum MovementControllState { MovementEnabled, MovementDisabled }
 	public enum GravityState { GravityEnabled, GravityDisabled }
@@ -97,6 +99,21 @@ public class PlayerController : ControllerObject
 
 	private bool m_onLadder;
 
+	[HideInInspector]
+	public bool m_pushLocked;
+
+	private void Awake()
+	{
+		if (instance == null)
+		{
+			instance = this;
+		}
+		else
+		{
+			Destroy(gameObject);
+		}
+	}
+
 	public override void Start()
 	{
 		base.Start();
@@ -114,6 +131,21 @@ public class PlayerController : ControllerObject
 	
 	public override void PerformController()
 	{
+		if (Input.GetMouseButton(0))
+		{
+			MoveObjects(m_pushableObjectMask);
+		}
+
+		if (Input.GetMouseButton(1))
+		{
+			MoveObjects(m_pushGunMask);
+		}
+
+		if (Input.GetMouseButtonUp(1) || Input.GetMouseButtonUp(0))
+		{
+			m_pushLocked = false;
+		}
+
 		if (Input.GetKeyDown(KeyCode.F))
 		{
 			OnPickupInputDown();
@@ -151,7 +183,7 @@ public class PlayerController : ControllerObject
 			{
 				m_velocity = Vector3.zero;
 
-				transform.position = transform.position + (Vector3.forward * (hit.transform.position.z - 1f));
+				transform.position = new Vector3(hit.transform.position.x, transform.position.y, transform.position.z) + (Vector3.forward * (hit.transform.position.z - 1f));
 
 				m_onLadder = true;
 			}
@@ -160,7 +192,7 @@ public class PlayerController : ControllerObject
 		{
 			m_onLadder = false;
 
-			transform.position = new Vector3(transform.position.x, transform.position.y, 0);
+			transform.position = new Vector3(transform.position.x, transform.position.y, 3);
 		}
 	}
 
@@ -183,7 +215,7 @@ public class PlayerController : ControllerObject
 			}
 			else
 			{
-				m_onLadder = false;
+				//m_onLadder = false;
 
 				transform.position = new Vector3(transform.position.x, transform.position.y, 0);
 			}
@@ -314,7 +346,7 @@ public class PlayerController : ControllerObject
 
 		if (CheckBuffer(ref m_jumpBufferTimer, ref m_jumpingProperties.m_jumpBufferTime, m_jumpBufferCoroutine))
 		{
-			JumpMaxVelocity();
+			//JumpMaxVelocity();
 		}
 	}
 
@@ -353,8 +385,8 @@ public class PlayerController : ControllerObject
 
 		if (CheckBuffer(ref m_graceTimer, ref m_jumpingProperties.m_graceTime, m_graceBufferCoroutine) && !IsGrounded() && m_velocity.y <= 0f)
 		{
-			GroundJump();
-			return;
+			//GroundJump();
+			//return;
 		}
 
 		if (IsGrounded())
@@ -405,21 +437,46 @@ public class PlayerController : ControllerObject
 
 	#endregion
 
+	private void MoveObjects(LayerMask p_mask)
+	{
+		if (!m_pushLocked)
+		{
+			Collider[] colliders = Physics.OverlapSphere(transform.position, 1f, p_mask);
+
+			if (colliders.Length > 0)
+			{
+				PushableObject pushable = colliders[0].gameObject.GetComponent<PushableObject>();
+				pushable.PushObject(m_velocity);
+			}
+		}
+
+
+		/*
+		foreach (Collider collider in colliders)
+		{
+			PushableObject pushable = collider.gameObject.GetComponent<PushableObject>();
+			pushable.PushObject(m_velocity);
+		}
+		*/
+	}
+
 	private void OnControllerColliderHit(ControllerColliderHit hit)
 	{
+		/*
 		if (CheckCollisionLayer(m_pushableObjectMask, hit.gameObject))
 		{
 			PushableObject pushable = hit.gameObject.GetComponent<PushableObject>();
 
-			pushable.PushObject(m_velocity);
 
 			if (IsGrounded())
 			{
-				if (Physics.Raycast(transform.position, transform.right * Mathf.Sign(m_velocity.x), Mathf.Infinity, m_pushableObjectMask))
+				if (Physics.Raycast(transform.position, transform.right * Mathf.Sign(m_velocity.x), 0.5f, m_pushableObjectMask))
 				{
-					
+					pushable.PushObject(m_velocity);
+
 				}
 			}
 		}
+		*/
 	}
 }

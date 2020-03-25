@@ -26,6 +26,8 @@ public class ObjectSnapZone : MonoBehaviour
 
 	private IEnumerator SnapObject()
 	{
+		PlayerController.instance.m_pushLocked = true;
+
 		m_hasObject = true;
 
 		float t = 0;

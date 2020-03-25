@@ -14,6 +14,8 @@ public class PushableObject : ControllerObject
 	[HideInInspector]
 	public bool m_isOnBridge;
 
+	private bool m_hasBeenMovedThisFrame;
+
 	public override void PerformController()
 	{
 		CalculateVelocity();
@@ -27,15 +29,30 @@ public class PushableObject : ControllerObject
 
 		Vector3 horizontalMovement = Vector3.SmoothDamp(m_velocity, Vector3.zero, ref m_velocitySmoothing, m_groundDeccelerationTime);
 
-		m_velocity = new Vector3(horizontalMovement.x, m_velocity.y, horizontalMovement.z);
+		//m_velocity = new Vector3(horizontalMovement.x, m_velocity.y, horizontalMovement.z);
+	}
+
+	private void LateUpdate()
+	{
+		if (!m_hasBeenMovedThisFrame && !m_isOnBridge)
+		{
+			m_velocity.x = 0;
+			m_velocitySmoothing = Vector3.zero;
+		}
+
+		m_hasBeenMovedThisFrame = false;
 	}
 
 	public void PushObject(Vector3 p_amount)
 	{
+		//m_characterController.Move(p_amount);
+
 		//m_velocity = p_amount;
 
 		m_velocity.x = p_amount.x;
 
 		m_isOnBridge = false;
+
+		m_hasBeenMovedThisFrame = true;
 	}
 }

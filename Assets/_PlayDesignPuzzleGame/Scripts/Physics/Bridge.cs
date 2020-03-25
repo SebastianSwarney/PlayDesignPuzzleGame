@@ -58,7 +58,18 @@ public class Bridge : MonoBehaviour
 
 		//p_objectToMove.m_velocity = Vector3.right * 30;
 
-		p_objectToMove.gameObject.layer = m_moveableLayer;
+		PushGun pushGun = p_objectToMove.gameObject.GetComponent<PushGun>();
+
+		if (pushGun == null)
+		{
+			p_objectToMove.gameObject.layer = m_moveableLayer;
+		}
+		else
+		{
+			p_objectToMove.gameObject.layer = 13;
+		}
+
+		
 
 		//p_objectToMove.m_isOnBridge = false;
 	}
