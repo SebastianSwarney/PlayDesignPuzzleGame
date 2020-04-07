@@ -42383,12 +42383,17 @@ PrefabInstance:
     - target: {fileID: 3110956604765122635, guid: d9790aafe779c104e974cf5a9ca8c0ec,
         type: 3}
       propertyPath: m_jumpingProperties.m_minJumpHeight
-      value: 0.5
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3110956604765122635, guid: d9790aafe779c104e974cf5a9ca8c0ec,
         type: 3}
       propertyPath: m_pushableObjectMask.m_Bits
       value: 256
+      objectReference: {fileID: 0}
+    - target: {fileID: 3110956604765122635, guid: d9790aafe779c104e974cf5a9ca8c0ec,
+        type: 3}
+      propertyPath: m_jumpingProperties.m_maxJumpHeight
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 3110956604765122637, guid: d9790aafe779c104e974cf5a9ca8c0ec,
         type: 3}
@@ -48407,12 +48412,12 @@ PrefabInstance:
     - target: {fileID: 7712436917032373591, guid: 1a3208d07f8a795438ba1314a5b622ff,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: 11
+      value: -7
       objectReference: {fileID: 0}
     - target: {fileID: 7712436917032373591, guid: 1a3208d07f8a795438ba1314a5b622ff,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: -9.5
+      value: -5.5
       objectReference: {fileID: 0}
     - target: {fileID: 7712436917032373591, guid: 1a3208d07f8a795438ba1314a5b622ff,
         type: 3}
