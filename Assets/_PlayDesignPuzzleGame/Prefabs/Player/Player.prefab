@@ -45,7 +45,7 @@ CharacterController:
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Height: 1
+  m_Height: 0.6
   m_Radius: 0.25
   m_SlopeLimit: 45
   m_StepOffset: 0.5
@@ -91,6 +91,7 @@ MonoBehaviour:
   m_characterController: {fileID: 0}
   m_hasJumped: 0
   m_faceDir: 0
+  m_isBeingCarried: 0
   m_states:
     m_movementControllState: 0
     m_gravityControllState: 0
@@ -123,6 +124,7 @@ MonoBehaviour:
   m_ladderMask:
     serializedVersion: 2
     m_Bits: 16384
+  m_pushLocked: 0
 --- !u!1 &3110956605311878068
 GameObject:
   m_ObjectHideFlags: 0

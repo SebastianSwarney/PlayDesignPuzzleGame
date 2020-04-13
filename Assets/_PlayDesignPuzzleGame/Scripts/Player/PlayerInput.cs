@@ -36,5 +36,29 @@ public class PlayerInput : MonoBehaviour
 		{
 			m_playerController.OnJumpInputUp();
 		}
+
+		if (m_playerInputController.GetButtonDown("Ladder"))
+		{
+			m_playerController.OnLadderInputDown();
+		}
+
+		if (m_playerInputController.GetButton("Push"))
+		{
+			m_playerController.PushCrates();
+		}
+		if (m_playerInputController.GetButtonUp("Push"))
+		{
+			m_playerController.PushInputUp();
+		}
+
+		if (m_playerInputController.GetButtonDown("Pickup"))
+		{
+			m_playerController.OnPickupInputDown();
+		}
+
+		if (m_playerInputController.GetButtonDown("Use"))
+		{
+			m_playerController.OnUseInputDown();
+		}
 	}
 }

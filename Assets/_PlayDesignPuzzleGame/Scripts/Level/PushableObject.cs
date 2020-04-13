@@ -16,6 +16,8 @@ public class PushableObject : ControllerObject
 
 	private bool m_hasBeenMovedThisFrame;
 
+	public bool m_disableGravity;
+
 	public override void PerformController()
 	{
 		CalculateVelocity();
@@ -25,9 +27,11 @@ public class PushableObject : ControllerObject
 
 	private void CalculateVelocity()
 	{
-		m_velocity.y -= m_gravity * Time.deltaTime;
-
-		Vector3 horizontalMovement = Vector3.SmoothDamp(m_velocity, Vector3.zero, ref m_velocitySmoothing, m_groundDeccelerationTime);
+		if (!m_disableGravity)
+		{
+			m_velocity.y -= m_gravity * Time.deltaTime;
+			Vector3 horizontalMovement = Vector3.SmoothDamp(m_velocity, Vector3.zero, ref m_velocitySmoothing, m_groundDeccelerationTime);
+		}
 
 		//m_velocity = new Vector3(horizontalMovement.x, m_velocity.y, horizontalMovement.z);
 	}
@@ -36,8 +40,12 @@ public class PushableObject : ControllerObject
 	{
 		if (!m_hasBeenMovedThisFrame && !m_isOnBridge)
 		{
-			m_velocity.x = 0;
-			m_velocitySmoothing = Vector3.zero;
+			if (!m_isBeingCarried)
+			{
+				m_velocity.x = 0;
+				m_velocitySmoothing = Vector3.zero;
+			}
+
 		}
 
 		m_hasBeenMovedThisFrame = false;

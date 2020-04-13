@@ -10,14 +10,21 @@ public class PushGun : PushableObject
 	public float m_pushRadius;
 	public LayerMask m_pushObjectMask;
 
+	public void OnPickupObject()
+	{
+		m_isBeingCarried = true;
+		m_disableGravity = true;
+	}
+
+	public void OnPlaceObject()
+	{
+		m_isBeingCarried = false;
+		m_disableGravity = false;
+	}
+
 	public override void PerformController()
 	{
 		base.PerformController();
-
-		if (Input.GetKeyDown(KeyCode.F))
-		{
-			//PushObjects();
-		}
 
 		m_visual.transform.rotation = Quaternion.AngleAxis(m_faceDir == -1 ? 0 : 180, Vector3.up);
 	}

@@ -9,8 +9,6 @@ public class PlayerControllerEvent : UnityEvent { }
 
 public class PlayerController : ControllerObject
 {
-	public static PlayerController instance;
-
 	#region Player Controller States
 	public enum MovementControllState { MovementEnabled, MovementDisabled }
 	public enum GravityState { GravityEnabled, GravityDisabled }
@@ -102,17 +100,9 @@ public class PlayerController : ControllerObject
 	[HideInInspector]
 	public bool m_pushLocked;
 
-	private void Awake()
-	{
-		if (instance == null)
-		{
-			instance = this;
-		}
-		else
-		{
-			Destroy(gameObject);
-		}
-	}
+	private PushGun m_carriedPushGun;
+
+	private PlayerInput m_input;
 
 	public override void Start()
 	{
@@ -121,46 +111,42 @@ public class PlayerController : ControllerObject
 		CalculateJump();
 
 		m_jumpBufferTimer = m_jumpingProperties.m_jumpBufferTime;
+
+		m_input = GetComponent<PlayerInput>();
 	}
 
 	private void OnValidate()
 	{
 		CalculateJump();
 	}
-
 	
 	public override void PerformController()
 	{
-		if (Input.GetMouseButton(0))
-		{
-			MoveObjects(m_pushableObjectMask);
-		}
-
 		if (Input.GetMouseButton(1))
 		{
-			MoveObjects(m_pushGunMask);
+			//MoveObjects(m_pushGunMask);
 		}
 
 		if (Input.GetMouseButtonUp(1) || Input.GetMouseButtonUp(0))
 		{
-			m_pushLocked = false;
+			
 		}
 
 		if (Input.GetKeyDown(KeyCode.F))
 		{
-			OnPickupInputDown();
+			//OnPickupInputDown();
 		}
 
 		if (Input.GetKeyDown(KeyCode.G))
 		{
-			OnUseInputDown();
+			//OnUseInputDown();
 		}
 
 		base.PerformController();
 
 		if (Input.GetKeyDown(KeyCode.E))
 		{
-			OnLadderInputDown();
+			//OnLadderInputDown();
 		}
 
 		if (m_onLadder)
@@ -173,7 +159,17 @@ public class PlayerController : ControllerObject
 		}
 	}
 
-	private void OnLadderInputDown()
+	public void PushCrates()
+	{
+		MoveObjects(m_pushableObjectMask);
+	}
+
+	public void PushInputUp()
+	{
+		m_pushLocked = false;
+	}
+
+	public void OnLadderInputDown()
 	{
 		if (!m_onLadder)
 		{
@@ -181,11 +177,18 @@ public class PlayerController : ControllerObject
 
 			if (Physics.SphereCast(transform.position, 1f, -Vector3.forward, out hit, Mathf.Infinity, m_ladderMask))
 			{
+				if (m_input.m_playerId == 1)
+				{
+					OnPickupInputDown();
+				}
+
 				m_velocity = Vector3.zero;
 
-				transform.position = new Vector3(hit.transform.position.x, transform.position.y, transform.position.z) + (Vector3.forward * (hit.transform.position.z - 1f));
+				transform.position = new Vector3(hit.transform.position.x, transform.position.y, transform.position.z) - (Vector3.forward * 5f);
 
 				m_onLadder = true;
+
+
 			}
 		}
 		else
@@ -217,18 +220,23 @@ public class PlayerController : ControllerObject
 			{
 				//m_onLadder = false;
 
-				transform.position = new Vector3(transform.position.x, transform.position.y, 0);
+				//transform.position = new Vector3(transform.position.x, transform.position.y, 0);
 			}
 		}
 	}
 
 	public void OnUseInputDown()
 	{
-		Collider[] colliders = Physics.OverlapSphere(transform.position, 3f, m_pushGunMask);
-
-		if (colliders.Length > 0)
+		if (m_input.m_playerId == 1)
 		{
-			colliders[0].gameObject.GetComponent<PushGun>().PushObjects();
+			Debug.Log("ran");
+
+			Collider[] colliders = Physics.OverlapSphere(transform.position, 3f, m_pushGunMask);
+
+			if (colliders.Length > 0)
+			{
+				colliders[0].gameObject.GetComponent<PushGun>().PushObjects();
+			}
 		}
 	}
 
@@ -236,7 +244,14 @@ public class PlayerController : ControllerObject
 	{
 		if (!m_isCarryingObject)
 		{
-			PickupObject();
+			if (m_input.m_playerId == 0)
+			{
+				PickupBridge();
+			}
+			else
+			{
+				PickupPushGun();
+			}
 		}
 		else
 		{
@@ -244,7 +259,29 @@ public class PlayerController : ControllerObject
 		}
 	}
 
-	public void PickupObject()
+	public void PickupPushGun()
+	{
+		Collider[] colliders = Physics.OverlapSphere(transform.position, 3f, m_pushGunMask);
+
+		if (colliders.Length > 0)
+		{
+			PushGun pushGunToPickup = colliders[0].GetComponent<PushGun>();
+
+			if (!pushGunToPickup.m_isBeingCarried)
+			{
+				pushGunToPickup.transform.position = transform.position + (Vector3.up * 1);
+				pushGunToPickup.transform.parent = transform;
+
+				m_carriedPushGun = pushGunToPickup;
+
+				m_carriedPushGun.OnPickupObject();
+
+				m_isCarryingObject = true;
+			}
+		}
+	}
+
+	public void PickupBridge()
 	{
 		Collider[] colliders = Physics.OverlapSphere(transform.position, 3f, m_bridgeMask);
 
@@ -261,20 +298,35 @@ public class PlayerController : ControllerObject
 
 				m_isCarryingObject = true;
 			}
-
 		}
 
 	}
 
 	public void PutDownObject()
 	{
-		m_carriedBridge.transform.parent = null;
-
-		RaycastHit hit;
-
-		if (Physics.Raycast(transform.position, Vector3.down, out hit, Mathf.Infinity, m_groundMask))
+		if (m_carriedBridge == null)
 		{
-			m_carriedBridge.transform.position = hit.point + (Vector3.up * (m_carriedBridge.transform.localScale.y / 2));
+			m_carriedPushGun.transform.parent = null;
+
+			RaycastHit hit;
+
+			if (Physics.Raycast(transform.position, Vector3.down, out hit, Mathf.Infinity, m_groundMask))
+			{
+				m_carriedPushGun.transform.position = hit.point + (Vector3.up * (m_carriedPushGun.transform.localScale.y / 2));
+			}
+
+			m_carriedPushGun.OnPlaceObject();
+		}
+		else if (m_carriedPushGun == null)
+		{
+			m_carriedBridge.transform.parent = null;
+
+			RaycastHit hit;
+
+			if (Physics.Raycast(transform.position, Vector3.down, out hit, Mathf.Infinity, m_groundMask))
+			{
+				m_carriedBridge.transform.position = hit.point + (Vector3.up * (m_carriedBridge.transform.localScale.y / 2));
+			}
 		}
 
 		m_isCarryingObject = false;
@@ -449,34 +501,5 @@ public class PlayerController : ControllerObject
 				pushable.PushObject(m_velocity);
 			}
 		}
-
-
-		/*
-		foreach (Collider collider in colliders)
-		{
-			PushableObject pushable = collider.gameObject.GetComponent<PushableObject>();
-			pushable.PushObject(m_velocity);
-		}
-		*/
-	}
-
-	private void OnControllerColliderHit(ControllerColliderHit hit)
-	{
-		/*
-		if (CheckCollisionLayer(m_pushableObjectMask, hit.gameObject))
-		{
-			PushableObject pushable = hit.gameObject.GetComponent<PushableObject>();
-
-
-			if (IsGrounded())
-			{
-				if (Physics.Raycast(transform.position, transform.right * Mathf.Sign(m_velocity.x), 0.5f, m_pushableObjectMask))
-				{
-					pushable.PushObject(m_velocity);
-
-				}
-			}
-		}
-		*/
 	}
 }

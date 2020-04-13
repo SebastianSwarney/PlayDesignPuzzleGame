@@ -54,6 +54,8 @@ public class ControllerObject : MonoBehaviour
 	[HideInInspector]
 	public int m_faceDir = -1;
 
+	public bool m_isBeingCarried;
+
 	public virtual void Start()
 	{
 		m_characterController = GetComponent<CharacterController>();
@@ -66,7 +68,10 @@ public class ControllerObject : MonoBehaviour
 
 	public virtual void PerformController()
 	{
-		m_characterController.Move(m_velocity * Time.deltaTime);
+		if (!m_isBeingCarried)
+		{
+			m_characterController.Move(m_velocity * Time.deltaTime);
+		}
 
 		if ((int)Mathf.Sign(m_velocity.x) != m_faceDir)
 		{
@@ -83,7 +88,7 @@ public class ControllerObject : MonoBehaviour
 
 	public bool IsGrounded()
 	{
-		if (m_characterController.collisionFlags == CollisionFlags.Below)
+		if (m_characterController.isGrounded)
 		{
 			return true;
 		}
