@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Rewired;
 
 public class PlayerInput : MonoBehaviour
 {
@@ -8,9 +9,13 @@ public class PlayerInput : MonoBehaviour
 	private PlayerController m_playerController;
 	private bool m_lockLooking;
 
+	private Player m_playerInputController;
+
 	private void Start()
 	{
 		m_playerController = GetComponent<PlayerController>();
+		m_playerInputController = ReInput.players.GetPlayer(m_playerId);
+
 	}
 
 	private void Update()
@@ -20,15 +25,14 @@ public class PlayerInput : MonoBehaviour
 
 	public void GetInput()
 	{
-		Vector2 movementInput = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
+		Vector2 movementInput = new Vector2(m_playerInputController.GetAxis("MoveHorizontal"), m_playerInputController.GetAxis("MoveVertical"));
 		m_playerController.SetMovementInput(movementInput);
 
-		if (Input.GetKeyDown(KeyCode.Space))
+		if (m_playerInputController.GetButtonDown("Jump"))
 		{
 			m_playerController.OnJumpInputDown();
 		}
-
-		if (Input.GetKeyUp(KeyCode.Space))
+		if (m_playerInputController.GetButtonUp("Jump"))
 		{
 			m_playerController.OnJumpInputUp();
 		}
